@@ -1,5 +1,8 @@
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.local" });
 
 export default {
   solidity: {
@@ -16,5 +19,12 @@ export default {
     hardhat: {
       allowUnlimitedContractSize: true,
     },
+    fuji: {
+      url: 'https://api.avax-test.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43113,
+      accounts: [process.env.ACCOUNT_PRIVATE_KEY],
+    },
   },
+  
 };
