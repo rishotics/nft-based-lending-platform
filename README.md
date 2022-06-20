@@ -30,6 +30,9 @@ Mock USDC which is build using ERC20 token.
 
 ## Setting up a local EVM Subnet
 
+To create a local subnet I have followed the following steps:-
+
+
 ```
 curl -sSfL https://raw.githubusercontent.com/ava-labs/avalanche-cli/main/scripts/install.sh | sh -s
 
@@ -42,6 +45,7 @@ avalanche subnet create rishotics4
 avalanche subnet deploy rishotics4
 ```
 
+After deploying the subnet the details we get are as follows:- 
 
 
 ```Network ready to use. Local network node endpoints:
@@ -66,7 +70,7 @@ Currency Symbol:  RISH
 I have included a deployment script which also contains code for understanding the general flow of Lending Platform.
 
 
-- Run the scripts: To deploy in Fuji C Test-Net please create a `.env.local` file with `ACCOUNT_PRIVATE_KEY=...`. 
+- Testnet: To deploy in Fuji C Test-Net please create a `.env.local` file with `ACCOUNT_PRIVATE_KEY=...`. 
     ```
     yarn hardhat run scripts/run.ts --network fuji
     ``` 
@@ -76,6 +80,9 @@ I have included a deployment script which also contains code for understanding t
     ```
     yarn hardhat run scripts/run.ts
     ```
+
+I have deployed the contracts on REMIX IDE as well to test the working. I used the details of above EVM subnet: rishotics4 to deploy the contracts and testing. I have also tested them with Fuji Testnet.
+
 
 ## Test Cases
 
