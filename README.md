@@ -9,9 +9,9 @@ I have described every lending transaction as a struct `lending_transactions` wh
 I am keeping a count of lending_transactions done by an address as we are keeping a max cap for them. This check will prevent the user to many unlimited transactions. It is kind of credit score check which prevent users for making fradulent transactions. I have also kept a cap for MAX_NUMBER_OF_HOURS for which user can take a loan. It is initially kept for 30 days(720 hrs).
 
 Contracts deployed in Fuji C chain:
-USDC Token : 0x02805FD17224138e22217507935A64158B0e3faA
-NFT Token : 0x895bF2213FE056D1Cc2d23869B742453B9e83047
-Lending Contract : 0x2204129Af3d50A2a9b271b62D0d357Bf933f9910
+- USDC Token : 0x02805FD17224138e22217507935A64158B0e3faA
+- NFT Token : 0x895bF2213FE056D1Cc2d23869B742453B9e83047
+- Lending Contract : 0x2204129Af3d50A2a9b271b62D0d357Bf933f9910
 
 There are 3 smart contracts:
 ### 1. Lending_platform.sol
