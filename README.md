@@ -28,16 +28,50 @@ This is the NFT contract and its build using OpenZeppelins ERC721URIStorage whic
 Mock USDC which is build using ERC20 token.
 
 
+## Setting up a local EVM Subnet
+
+```
+curl -sSfL https://raw.githubusercontent.com/ava-labs/avalanche-cli/main/scripts/install.sh | sh -s
+
+cd bin 
+
+export PATH=$PWD:$PATH
+
+avalanche subnet create rishotics4
+
+avalanche subnet deploy rishotics4
+```
+
+
+
+```Network ready to use. Local network node endpoints:
+Endpoint at node node5 for blockchain "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z" with VM ID "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z": http://127.0.0.1:53640/ext/bc/8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z/rpc
+Endpoint at node node1 for blockchain "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z" with VM ID "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z": http://127.0.0.1:22287/ext/bc/8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z/rpc
+Endpoint at node node2 for blockchain "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z" with VM ID "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z": http://127.0.0.1:48503/ext/bc/8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z/rpc
+Endpoint at node node3 for blockchain "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z" with VM ID "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z": http://127.0.0.1:65190/ext/bc/8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z/rpc
+Endpoint at node node4 for blockchain "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z" with VM ID "8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z": http://127.0.0.1:45692/ext/bc/8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z/rpc
+
+Metamask connection details (any node URL from above works):
+RPC URL:          http://127.0.0.1:53640/ext/bc/8m7MWqHSnTnCSTUpBNQaJeG4PhGgW5QLRA8pi3hzEvxv41h1Z/rpc
+Funded address:   0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC with 1000000 (10^18) - private key: 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
+Network name:     rishotics4
+Chain ID:         2108
+Currency Symbol:  RISH
+```
+
+
+
 ## Deploy Contracts
 
 I have included a deployment script which also contains code for understanding the general flow of Lending Platform.
 
-- Run the scripts: To deploy in Fuji C-Net please create a `.env.local` file with `ACCOUNT_PRIVATE_KEY=...`. 
+
+- Run the scripts: To deploy in Fuji C Test-Net please create a `.env.local` file with `ACCOUNT_PRIVATE_KEY=...`. 
     ```
     yarn hardhat run scripts/run.ts --network fuji
     ``` 
 
-For local
+- For local
 
     ```
     yarn hardhat run scripts/run.ts
