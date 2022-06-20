@@ -1,0 +1,268 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/Timers.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "contracts/RISHOTICS.sol";
+import "contracts/USDC.sol";
+
+
+contract Lending_platform is IERC721Receiver{
+
+    using SafeMath for uint256;
+    using Counters for Counters.Counter;
+    // Transaction ID is unique for every lending done
+    Counters.Counter private _transactionIds;
+
+    //Interest Rate which is charged per hour
+    uint8 interestRate;
+
+    // Owner of the contract
+    address immutable owner;
+
+
+    // Structure for storing a transaction
+    struct lending_transactions{
+        address user;
+        uint256 tokenId;
+        uint256 amount_lend;
+        uint256 start_time;
+        uint256 end_time;
+        uint256 hours_to_lend;
+        bool isActive;
+    }
+
+
+    //Transaction ID => Lending_Transaction
+    mapping (uint256 => lending_transactions) internal transIdToTrans;
+    //Address => TransactionID
+    mapping (address => uint256) internal addToTransId;
+
+    event LendingDone(address user, uint256 amount, uint256 timeLimit, uint256 transactionID);
+    event LoanPaidBack(address user, uint256 totalAmountPaid);
+    event RemainingUSDCTransferred(address user, uint256 remainingAmount);
+    event DefaultedNftSold(address user, uint256 totalAmountPaid);
+
+    //RISH NFT Token
+    RISHOTICS public immutable rish_token;
+
+    //Mock USDC which is ERC20's token version 
+    USDC public immutable usdc;
+
+
+    modifier userHasTakenLoan(address user){
+        require(addToTransId[user] > 0, "You have taken no loan");
+        _;
+    }
+
+    modifier isLoanActive(address user){
+        require(transIdToTrans[addToTransId[user]].isActive && 
+                transIdToTrans[addToTransId[user]].end_time >= block.timestamp, 
+                "Loan has expired or been paid" );
+        _;
+    }
+
+    constructor(address _rish_token, address _usdc, uint8 _interestRate)
+    {
+        owner = msg.sender;
+        rish_token = RISHOTICS(_rish_token);
+        usdc = USDC(_usdc);
+        interestRate = _interestRate;
+        _transactionIds.increment();
+    }
+
+    function lendUSDC(uint256 tokenId, uint256 amount, uint256 timeToReturn)
+        public
+        returns (uint256)
+    {
+        require(msg.sender != address(0), "Address cannot be zero");
+        require(msg.sender == rish_token.ownerOf(tokenId), "Calling address should be owner of NFT");
+        require(rish_token.getApproved(tokenId) == address(this), "Approval for NFT Token not given");
+        uint256 nft_price = get_nft_price();
+        uint256 min_amount_to_lend = nft_price.div(10).mul(7);
+        require(min_amount_to_lend >= (amount), "Amount asked is greater than 70% value of collateral NFT");
+
+        uint256 newTransactionId = _transactionIds.current();
+        lending_transactions storage lending_transaction = transIdToTrans[newTransactionId];
+        lending_transaction.user = msg.sender;
+        lending_transaction.tokenId = tokenId;
+        lending_transaction.amount_lend = amount;
+        lending_transaction.start_time = block.timestamp;
+        lending_transaction.end_time = block.timestamp + convertToHours(timeToReturn);
+        lending_transaction.hours_to_lend = timeToReturn;
+        lending_transaction.isActive = true;
+
+        //Safetly transfer NFT token from owner to lending contract
+        rish_token.safeTransferFrom(msg.sender, address(this), tokenId);
+        //Safetly transfer USDC from lending contract to msg.sender
+        bool success = usdc.transfer(msg.sender, amount);
+        require(success, "Transfer of USDC failed");
+        addToTransId[msg.sender] = newTransactionId;
+        emit LendingDone(msg.sender, amount, timeToReturn, newTransactionId);
+        
+        _transactionIds.increment();
+        return newTransactionId;
+    }
+
+
+    function payInterest(uint256 transactionId, uint256 amount)
+        public
+        userHasTakenLoan(msg.sender)
+        isLoanActive(msg.sender)
+    {
+        // uint256 transactionId = addToTransId[msg.sender];
+        require(msg.sender == transIdToTrans[transactionId].user, "Only the owner of NFT can claim pay back before time is over");
+        _SafeTransferUsdcAndNft(transactionId, amount);
+    }
+
+
+    function getTotalAmountToPay(uint256 transactionId)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 interestValue = getInterest(transactionId);
+        uint256 totalAmountToPay = (transIdToTrans[transactionId].amount_lend).add(interestValue);
+        return totalAmountToPay;
+    }
+
+
+    function getPricipalAmount(uint256 transactionId)
+        public
+        view
+        returns (uint256)
+    {
+        return transIdToTrans[transactionId].amount_lend;
+    }
+
+
+    function getInterest(uint256 transactionId)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 timeSpent = getTimeSpent(transactionId);
+        uint256 interestAmount = (transIdToTrans[transactionId].amount_lend).div(100).mul(interestRate).mul(timeSpent);
+        return interestAmount;
+    }
+
+
+    function getTimeSpent(uint256 transactionId)
+        public
+        view
+        returns (uint256)
+    {
+        if (block.timestamp < transIdToTrans[transactionId].end_time){
+            return (block.timestamp - transIdToTrans[transactionId].start_time).div(3600);
+        }
+        else{
+            return transIdToTrans[transactionId].hours_to_lend;
+        }
+        
+    }
+
+    function get_nft_price()
+        public
+        pure
+        returns(uint256)
+    {
+        return 10 ether;
+    }
+
+
+    function onERC721Received(address, address, uint256, bytes memory) 
+        public 
+        virtual 
+        override 
+        returns (bytes4) 
+    {
+        return this.onERC721Received.selector;
+    }
+
+    function convertToHours(uint256 timeToReturn)
+        public
+        pure
+        returns (uint256)
+    {
+        if (timeToReturn == 24){
+            return 24 hours;
+        } 
+        else if (timeToReturn == 48){
+            return 48 hours;
+        }
+        revert("Loan not offered for given time");
+    }
+
+
+    function getTransactionStatus(uint256 transactionId)
+        public
+        view
+        returns (bool)
+    {
+        return transIdToTrans[transactionId].isActive;
+    }
+
+
+    function checkIfTransactionDefaulted(uint256 transactionId)
+        public
+        view
+        returns (bool)
+    {
+        if ( transIdToTrans[transactionId].end_time < block.timestamp && transIdToTrans[transactionId].isActive){
+            return true;
+        }
+        return false;
+    }
+
+
+    function _SafeTransferUsdcAndNft(uint256 transactionId, uint256 amount)
+        internal
+    {
+        uint256 totalAmountToPay = getTotalAmountToPay(transactionId);
+        require(amount >= totalAmountToPay, "USDC amount is less than pricipal + interest");
+        require(usdc.allowance(msg.sender, address(this)) >= totalAmountToPay, "USDC allowance not set");
+
+        usdc.transferFrom(msg.sender, address(this), totalAmountToPay);
+        emit LoanPaidBack(msg.sender, totalAmountToPay);
+
+        uint256 remainingAmount = (amount ).sub(totalAmountToPay);
+        if (remainingAmount > 0){
+            bool success = usdc.transfer(msg.sender, remainingAmount);
+            require(success, "Transfer of USDC failed");
+            emit RemainingUSDCTransferred(msg.sender, remainingAmount);
+        }
+        else{
+            emit RemainingUSDCTransferred(msg.sender, 0);
+        }
+
+        rish_token.approve(msg.sender, transIdToTrans[transactionId].tokenId);
+        rish_token.transferFrom(address(this), msg.sender, transIdToTrans[transactionId].tokenId);
+
+        lending_transactions storage lending_transaction = transIdToTrans[transactionId];
+        lending_transaction.isActive = false;
+    }
+
+
+    function SellNftIfDefaulted(uint256 transactionId, uint256 amount)
+        public
+    {
+        require(transactionId > 0, "Invalid transaction ID");
+        require(transIdToTrans[transactionId].end_time < block.timestamp, 
+                "Loan is not defaulted till now.There is still time for owner to pay the loan");
+        require(transIdToTrans[transactionId].isActive, "Loan is already paid. This Lend Transaction is already over");
+        _SafeTransferUsdcAndNft(transactionId, amount);
+        emit DefaultedNftSold(msg.sender, amount);
+    }
+
+    function changeInterestRate(uint8 _newInterestRate)
+        public
+    {
+        require(msg.sender == owner, "Only owner can change interest rate");
+        interestRate = _newInterestRate;
+    }
+
+}
