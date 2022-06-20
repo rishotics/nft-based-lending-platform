@@ -32,6 +32,17 @@ Mock USDC which is build using ERC20 token.
 
 I have included a deployment script which also contains code for understanding the general flow of Lending Platform.
 
+- Run the scripts: To deploy in Fuji C-Net please create a `.env.local` file with `ACCOUNT_PRIVATE_KEY=...`. 
+    ```
+    yarn hardhat run scripts/run.ts --network fuji
+    ``` 
+
+For local
+
+    ```
+    yarn hardhat run scripts/run.ts
+    ```
+
 ## Test Cases
 
 I have kept the test cases pretty exhaustive and tried to cover all the edge cases. They are in the file test/lending_contract-test.ts
@@ -57,10 +68,7 @@ I have used hardhat for development & Mocha, Chai for testing the contracts
     yarn hardhat test
     ``` 
 
-- Run the scripts:
-    ```
-    yarn hardhat run scripts/run.ts --network fuji
-    ``` 
+
 
 
 ## Assumptions taken:
